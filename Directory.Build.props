@@ -1,0 +1,19 @@
+<Project>
+
+  <PropertyGroup>
+
+    <!-- All projects use .NET 8 -->
+    <TargetFramework>net8.0</TargetFramework>
+
+    <!-- Enable nullable reference types -->
+    <Nullable>enable</Nullable>
+
+    <!-- Enable implicit global using statements -->
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Recommended -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,76 @@
+# Runtime base
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 8080
+EXPOSE 8081
+
+
+# Build stage
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+
+ARG BUILD_CONFIGURATION=Release
+WORKDIR /src
+
+# Copy project files first for better layer caching
+COPY ["src/InventoryService/InventoryService.Api/InventoryService.Api.csproj","src/InventoryService/InventoryService.Api/"]
+
+COPY ["src/InventoryService/InventoryService.Application/InventoryService.Application.csproj","src/InventoryService/InventoryService.Application/"]
+
+COPY ["src/InventoryService/InventoryService.Domain/InventoryService.Domain.csproj","src/InventoryService/InventoryService.Domain/"]
+
+COPY ["src/InventoryService/InventoryService.Infrastructure/InventoryService.Infrastructure.csproj","src/InventoryService/InventoryService.Infrastructure/"]
+
+# If using central package management
+COPY ["Directory.Packages.props", "."]
+COPY ["Directory.Build.props", "."]
+
+RUN dotnet restore \
+    "src/InventoryService/InventoryService.Api/InventoryService.Api.csproj"
+
+COPY . .
+
+WORKDIR "/src/src/InventoryService/InventoryService.Api"
+
+RUN dotnet build \
+    "InventoryService.Api.csproj" \
+    -c $BUILD_CONFIGURATION \
+    -o /app/build
+
+
+# Publish API
+FROM build AS publish
+
+ARG BUILD_CONFIGURATION=Release
+
+RUN dotnet publish \
+    "InventoryService.Api.csproj" \
+    -c $BUILD_CONFIGURATION \
+    -o /app/publish \
+    /p:UseAppHost=false
+
+
+# API runtime image
+FROM base AS final
+
+WORKDIR /app
+
+COPY --from=publish /app/publish .
+
+ENTRYPOINT ["dotnet", "InventoryService.Api.dll"]
+
+
+# -------------------------------------------------------
+# Dedicated EF Core migration image
+# -------------------------------------------------------
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS migration
+
+WORKDIR /src
+
+# Reuse restored/built source from build stage
+COPY --from=build /src /src
+
+RUN dotnet tool install --global dotnet-ef --version 8.*
+
+ENV PATH="${PATH}:/root/.dotnet/tools"
+
+ENTRYPOINT ["dotnet","ef","database","update","--project","src/InventoryService/InventoryService.Infrastructure","--startup-project","src/InventoryService/InventoryService.Api"]

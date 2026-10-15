@@ -1,0 +1,45 @@
+
+# .NET Build
+**/bin/
+**/obj/
+.vs/
+.vscode/
+TestResults/
+*.user
+*.suo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+**/appsettings.Development.json
+**/appsettings.Production.json
+**/secrets.json
+*.pfx
+*.p12
+*.pem
+*.key
+
+# Local database and Docker data
+postgres-data/
+**/pgdata/
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# IDE / OS
+.idea/
+.DS_Store
+Thumbs.db
+
+# NuGet
+*.nupkg
+packages/
+
+# Temporary files
+*.tmp
+*.bak

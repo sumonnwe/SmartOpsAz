@@ -1,0 +1,107 @@
+Local Development
+
+dotnet ef migrations add InitialCreate --project src/InventoryService/InventoryService.Infrastructure --startup-project src/InventoryService/InventoryService.Api
+dotnet ef database update --project src/InventoryService/InventoryService.Infrastructure --startup-project src/InventoryService/InventoryService.Api
+
+//
+PS C:\DEV_TEST\SmartOpsAz> dotnet ef migrations add InitialDeviceCreate --project src/DeviceService/DeviceService.Infrastructure/DeviceService.Infrastructure.csproj --startup-project src/DeviceService/DeviceService.Api/DeviceService.Api.csproj --context DeviceDbContext
+
+
+dotnet list src/InventoryService/InventoryService.Api package --include-transitive
+
+//Db migrate update
+dotnet ef database update --project src/InventoryService/InventoryService.Infrastructure/InventoryService.Infrastructure.csproj --startup-project src/InventoryService/InventoryService.Api/InventoryService.Api.csproj --context InventoryDbContext
+dotnet ef database update --project src/DeviceService/DeviceService.Infrastructure/DeviceService.Infrastructure.csproj --startup-project src/DeviceService/DeviceService.Api/DeviceService.Api.csproj --context DeviceDbContext
+
+//Version and SDK check
+dotnet --version
+dotnet --list-sdks
+
+//Nuget clear cache 
+dotnet nuget locals all --clear
+
+
+
+//Update EF Core CLI tools to version 9
+dotnet tool list --local
+dotnet tool list --global
+
+//dotnet-ef is installed globally, run:  framework upgrade, dependency alignment
+dotnet tool update --global dotnet-ef --version 9.0.0
+
+
+dotnet ef migrations add InitialIdentityCreate --project src/IdentityService/IdentityService.Infrastructure --startup-project src/IdentityService/IdentityService.Api --context IdentityDbContext --output-dir Migrations
+
+dotnet ef migrations add InitialDeviceCreate --project src/DeviceService/DeviceService.Infrastructure --startup-project src/DeviceService/DeviceService.Api --context DeviceDbContext --output-dir Migrations
+
+--nuget version conflict between packages--
+1.Check installed and transitive package versions
+cd C:\DEV_TEST\SmartOpsAz
+dotnet list src/IdentityService/IdentityService.Api/IdentityService.Api.csproj package --include-transitive
+
+//to filter the output-dir
+dotnet list package --include-transitive | Select-String "Microsoft.OpenApi|Swashbuckle"
+
+2. Check which package requires Microsoft.OpenApi
+dotnet nuget why ` src/IdentityService/IdentityService.Api/IdentityService.Api.csproj ` Microsoft.OpenApi
+
+...Expected Dependency Chain
+
+IdentityService.Api
+│
+├── Microsoft.OpenApi (1.6.31)
+│
+└── Swashbuckle.AspNetCore (10.3.0)
+    └── Swashbuckle.AspNetCore.Swagger (10.3.0)
+        └── Microsoft.OpenApi (>= 2.7.5)
+	
+3. Recommended commands for your SmartOpsAz project
+Command	Purpose
+dotnet list package --include-transitive		Inspect resolved direct and transitive versions
+dotnet nuget why <project> Microsoft.OpenApi	Identify the dependency chain
+dotnet restore --force							Detect NU1605 downgrade conflicts
+dotnet list package --outdated					Find available newer versions
+dotnet restore -v diag							Investigate detailed NuGet resolution errors
+
+//////////////////
+
+docker compose down
+dotnet clean
+dotnet restore
+
+docker compose up
+
+///
+Next Steps
+1.	Clean and rebuild your solution: dotnet clean && dotnet build
+2.	If the issue persists, clear NuGet cache: dotnet nuget locals all --clear
+3.	Restore packages: dotnet restore
+
+
+//recreate image
+docker compose up -d --build --force-recreate identityservice
+
+//build with no cache for specific container
+docker compose build --no-cache inventory-migration
+
+//build with no cache 
+docker compose build --no-cache
+
+//remove containers, networks, and Compose-managed volumes:
+docker compose down -v --remove-orphans
+//confirm the database volumnes were removed
+docker volume ls
+
+
+//rebuild everything from scratch
+docker compose build --no-cache
+//then start the application 
+docker compose up -d --force-recreate
+
+//rebuild specific image
+docker compose build --no-cache device-api
+docker compose up -d --force-recreate device-api
+
+//test stop service to check MassTransit is working to wait consumer microservies 
+docker compose stop dashboard-api
+

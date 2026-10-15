@@ -1,0 +1,20 @@
+using System;
+using System.Collections.Generic;
+
+namespace InventoryService.Application.Inventory.GetAssetHistory;
+
+public sealed class AssetHistoryResult
+{
+    public Guid InventoryId { get; set; }
+    public List<AssetHistoryEntry> Movements { get; set; } = new();
+}
+
+public sealed class AssetHistoryEntry
+{
+    public int MovementType { get; set; }
+    public string? FromDepartment { get; set; }
+    public string? ToDepartment { get; set; }
+    public string? FromLocation { get; set; }
+    public string? ToLocation { get; set; }
+    public DateTime OccurredAt { get; set; }
+}

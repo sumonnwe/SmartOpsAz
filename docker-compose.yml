@@ -1,0 +1,308 @@
+version: '3.8'
+
+services:
+  device-migration:
+    container_name: smartops-device-migration
+    build:
+      context: .
+      dockerfile: src/DeviceService/DeviceService.Dockerfile
+      target: migration
+    environment:
+       ConnectionStrings__DeviceDatabase: "Host=device-postgres;Port=5432;Database=devicedb;Username=postgres;Password=postgres"
+    command:
+      - dotnet
+      - ef
+      - database
+      - update
+      - --project
+      - src/DeviceService/DeviceService.Infrastructure/DeviceService.Infrastructure.csproj
+      - --startup-project
+      - src/DeviceService/DeviceService.Api/DeviceService.Api.csproj
+      - --context
+      - DeviceDbContext
+    depends_on:
+      device-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - smartops-network
+      
+  inventory-migration:
+    container_name: smartops-inventory-migration
+    build:
+      context: .
+      dockerfile: src/InventoryService/InventoryService.Dockerfile
+      target: migration
+    environment:
+       ASPNETCORE_ENVIRONMENT: Development
+       ConnectionStrings__InventoryDatabase: "Host=inventory-postgres;Port=5432;Database=inventorydb;Username=postgres;Password=postgres"
+    command:
+      - dotnet
+      - ef
+      - database
+      - update
+      - --project
+      - src/InventoryService/InventoryService.Infrastructure/InventoryService.Infrastructure.csproj
+      - --startup-project
+      - src/InventoryService/InventoryService.Api/InventoryService.Api.csproj
+      - --context
+      - InventoryDbContext
+    depends_on:
+      inventory-postgres:
+        condition: service_healthy
+    networks:
+      - smartops-network
+      
+  identity-migration:
+    container_name: smartops-identity-migration
+    build:
+      context: .
+      dockerfile: src/IdentityService/IdentityService.Dockerfile
+      target: migration
+    environment:
+       ASPNETCORE_ENVIRONMENT: Development
+       ConnectionStrings__IdentityDatabase: "Host=identity-postgres;Port=5432;Database=identitydb;Username=postgres;Password=postgres"
+    command:
+      - dotnet
+      - ef
+      - database
+      - update
+      - --project
+      - src/IdentityService/IdentityService.Infrastructure/IdentityService.Infrastructure.csproj
+      - --startup-project
+      - src/IdentityService/IdentityService.Api/IdentityService.Api.csproj
+      - --context
+      - IdentityDbContext
+    depends_on:
+      identity-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - smartops-network
+    
+  # IdentityService PostgreSQL
+  identity-postgres:
+    container_name: smartops-identity-postgres
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: identitydb
+    ports:
+      - "5431:5432"
+    volumes:
+      - identity-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartops-network
+
+  # InventoryService PostgreSQL
+  inventory-postgres:    
+    container_name: smartops-inventory-postgres
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: inventorydb
+    ports:
+      - "5434:5432"
+    volumes:
+      - inventory-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartops-network
+
+  # DeviceService PostgreSQL (NEW)
+  device-postgres:
+    container_name: smartops-device-postgres
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: devicedb
+    ports:
+      - "5433:5432"
+    volumes:
+      - device-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartops-network
+
+  # RabbitMQ (for future messaging)
+  rabbitmq:  
+    container_name: smartops-rabbitmq
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartops-network
+
+  # IdentityService API
+  identity-api:
+    container_name: smartops-identity-api
+    build:
+      context: .
+      dockerfile: src/IdentityService/IdentityService.Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__IdentityDatabase: "User ID=postgres;Password=postgres;Host=identity-postgres;Port=5432;Database=identitydb;Pooling=true;"
+      IdentitySeed__DefaultPassword: "Password123!"
+      Jwt__Issuer: "https://localhost:5101"
+      Jwt__Audience: "smartops-api"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY}
+    ports:
+      - "5101:8080"
+    depends_on:
+      identity-migration:
+        condition: service_completed_successfully
+    networks:
+      - smartops-network
+
+  # InventoryService API
+  inventory-api:
+    container_name: smartops-inventory-api
+    build:
+      context: .
+      dockerfile: src/InventoryService/InventoryService.Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__InventoryDatabase: "User ID=postgres;Password=postgres;Host=inventory-postgres;Port=5432;Database=inventorydb;Pooling=true;"
+      Jwt__Issuer: "https://localhost:5101"
+      Jwt__Audience: "smartops-api"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY}
+    ports:
+      - "5102:8080"
+    depends_on:
+      inventory-migration:
+        condition: service_completed_successfully
+    networks:
+      - smartops-network
+
+  # DeviceService API (NEW)
+  device-api:
+    container_name: smartops-device-api
+    build:
+      context: .
+      dockerfile: src/DeviceService/DeviceService.Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DeviceDatabase: "User ID=postgres;Password=postgres;Host=device-postgres;Port=5432;Database=devicedb;Pooling=true;"
+      Jwt__Issuer: "https://localhost:5101"
+      Jwt__Audience: "smartops-api"
+      Jwt__SigningKey:  ${JWT_SIGNING_KEY}
+      InventoryService__BaseUrl: "http://inventory-api:8080"
+      DeviceService__BaseUrl: "http://device-api:8080"
+      DeviceService__OfflineThresholdSeconds: "300"
+      DeviceService__OfflineDetectionIntervalSeconds: "60"
+      DeviceService__Simulator__Enabled: "false"
+      RabbitMQ__Enabled: "true"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Port: "5672"
+      RabbitMQ__Username: "guest"
+      RabbitMQ__Password: "guest"
+      RabbitMQ__VirtualHost: "/"
+    ports:
+      - "5103:8080"
+    depends_on:
+      device-migration:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - smartops-network 
+      
+  # Dashboard API (NEW)
+  dashboard-api:
+    container_name: smartops-dashboard-api
+    build:
+      context: .
+      dockerfile: src/DashboardService/DashboardService.Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080 
+      Jwt__Issuer: "https://localhost:5101"
+      Jwt__Audience: "smartops-api"
+      Jwt__SigningKey:  ${JWT_SIGNING_KEY}
+      InventoryService__BaseUrl: "http://inventory-api:8080"
+      DeviceService__BaseUrl: "http://device-api:8080"
+      DeviceService__OfflineThresholdSeconds: "300"
+      DeviceService__OfflineDetectionIntervalSeconds: "60"
+      DeviceService__Simulator__Enabled: "false"
+      RabbitMQ__Enabled: "true"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Port: "5672"
+      RabbitMQ__Username: "guest"
+      RabbitMQ__Password: "guest"
+      RabbitMQ__VirtualHost: "/"
+      Redis__Connection: "redis:6379"
+    ports:
+      - "5107:8080"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - smartops-network 
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartops-network
+ 
+volumes:
+  identity-postgres-data:
+  inventory-postgres-data:
+  device-postgres-data:
+  rabbitmq-data:
+  redis-data:
+
+networks:
+  smartops-network:
+    driver: bridge
