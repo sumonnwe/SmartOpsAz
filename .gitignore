@@ -43,3 +43,6 @@ packages/
 # Temporary files
 *.tmp
 *.bak
+
+GenAI summary/
+*.zip
