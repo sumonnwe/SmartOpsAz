@@ -23,6 +23,22 @@ builder.Services.AddFluentValidationAutoValidation();
 // Register Identity infrastructure
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
 
+//Cors
+const string ReactCorsPolicy = "ReactWebUI";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(ReactCorsPolicy, policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:5173",
+                "http://127.0.0.1:5173"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -48,10 +64,17 @@ if (app.Environment.IsDevelopment())
     }
 }
 
+app.UseRouting();
+
+app.UseCors(ReactCorsPolicy);
+
+app.UseAuthentication();
+app.UseAuthorization();
+
 // Exception middleware should be early in the pipeline
 app.UseIdentityExceptionHandler();
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.MapControllers();
 

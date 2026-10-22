@@ -37,6 +37,16 @@ public class DeviceRepository : IDeviceRepository
         await _db.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var device = await _db.Devices.FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
+        if (device != null)
+        {
+            _db.Devices.Remove(device);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+    }
+
     public async Task AddHeartbeatAsync(DeviceHeartbeat heartbeat, CancellationToken cancellationToken = default)
     {
         await _db.DeviceHeartbeats.AddAsync(heartbeat, cancellationToken);
@@ -63,6 +73,38 @@ public class DeviceRepository : IDeviceRepository
         CancellationToken cancellationToken = default)
     {
         return await _db.Devices
+            .OrderByDescending(d => d.RegisteredAtUtc)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<IoTDevice>> SearchAsync(
+        string? deviceCode,
+        DeviceStatus? status,
+        Guid? gatewayId,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _db.Devices.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(deviceCode))
+        {
+            query = query.Where(d => d.DeviceCode.Contains(deviceCode));
+        }
+
+        if (status.HasValue)
+        {
+            query = query.Where(d => d.Status == status.Value);
+        }
+
+        if (gatewayId.HasValue)
+        {
+            query = query.Where(d => d.GatewayId == gatewayId.Value);
+        }
+
+        return await query
             .OrderByDescending(d => d.RegisteredAtUtc)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)

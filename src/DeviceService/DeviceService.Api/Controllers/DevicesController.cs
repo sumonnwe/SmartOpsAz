@@ -151,16 +151,18 @@ public class DevicesController : ControllerBase
         {
             var now = DateTimeOffset.UtcNow;
             device.UpdateName(request.Name, now);
+
             if (!string.IsNullOrWhiteSpace(request.FirmwareVersion))
-                device.UpdateName(request.Name, now); // keep name update
+            {
                 device.ApplyHeartbeat(
-                    device.LastHeartbeatAtUtc ?? now, // use last heartbeat or now
+                    device.LastHeartbeatAtUtc ?? now,
                     device.BatteryPercentage,
                     device.SignalStrengthRssi,
                     device.CpuUsagePercentage,
                     device.MemoryUsagePercentage,
                     request.FirmwareVersion,
                     now);
+            }
 
             await _repo.UpdateAsync(device, cancellationToken);
             _logger.LogInformation("Device updated: {DeviceId}", deviceId);
@@ -374,6 +376,48 @@ public class DevicesController : ControllerBase
 
         _logger.LogInformation("Device activated: {DeviceId}", deviceId);
         return NoContent();
+    }
+
+    /// <summary>
+    /// Delete a device.
+    /// </summary>
+    [HttpDelete("{deviceId:guid}")]
+    [Authorize(Roles = "BiomedicalEngineer,Admin")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteDevice(
+        [FromRoute] Guid deviceId,
+        CancellationToken cancellationToken)
+    {
+        var device = await _repo.GetByIdAsync(deviceId, cancellationToken);
+        if (device == null)
+            return NotFound();
+
+        await _repo.DeleteAsync(deviceId, cancellationToken);
+        _logger.LogInformation("Device deleted: {DeviceId}", deviceId);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Search devices with filtering and pagination.
+    /// </summary>
+    [HttpGet("search")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> SearchDevices(
+        [FromQuery] string? deviceCode,
+        [FromQuery] DeviceStatus? status,
+        [FromQuery] Guid? gatewayId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1 || pageSize > 100) pageSize = 20;
+
+        var devices = await _repo.SearchAsync(deviceCode, status, gatewayId, page, pageSize, cancellationToken);
+        var dtos = devices.Select(MapToDto).ToList();
+
+        return Ok(new { page, pageSize, items = dtos });
     }
 
     private static DeviceDto MapToDto(IoTDevice device)

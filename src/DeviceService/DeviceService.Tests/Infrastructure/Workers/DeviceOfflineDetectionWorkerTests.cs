@@ -6,6 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
+using DeviceService.Domain.Entities;
+using Microsoft.Extensions.Hosting;
 
 namespace DeviceService.Tests.Infrastructure.Workers;
 
@@ -48,7 +50,7 @@ public class DeviceOfflineDetectionWorkerTests
         var mockRepo = new Mock<IDeviceRepository>();
         mockRepo
             .Setup(r => r.GetDevicesWithLastHeartbeatBeforeAsync(It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Domain.Entities.IoTDevice>());
+            .Returns(Task.FromResult<IReadOnlyList<IoTDevice>>(new List<IoTDevice>()));
 
         var mockPublisher = new Mock<IEventPublisher>();
 
@@ -58,8 +60,9 @@ public class DeviceOfflineDetectionWorkerTests
         var serviceProvider = services.BuildServiceProvider();
 
         var logger = serviceProvider.GetRequiredService<ILogger<DeviceOfflineDetectionWorker>>();
+        var serviceScopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
         var worker = new DeviceOfflineDetectionWorker(
-            serviceProvider,
+            serviceScopeFactory,
             logger,
             config);
 

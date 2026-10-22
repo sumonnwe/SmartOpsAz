@@ -8,7 +8,7 @@ services:
       dockerfile: src/DeviceService/DeviceService.Dockerfile
       target: migration
     environment:
-       ConnectionStrings__DeviceDatabase: "Host=device-postgres;Port=5432;Database=devicedb;Username=postgres;Password=postgres"
+       ConnectionStrings__DeviceDatabase: "Host=device-postgres;Username=postgres;Password=postgres;Port=5432;Database=devicedb;"
     command:
       - dotnet
       - ef
@@ -35,7 +35,7 @@ services:
       target: migration
     environment:
        ASPNETCORE_ENVIRONMENT: Development
-       ConnectionStrings__InventoryDatabase: "Host=inventory-postgres;Port=5432;Database=inventorydb;Username=postgres;Password=postgres"
+       ConnectionStrings__InventoryDatabase: "Host=inventory-postgres;Username=postgres;Password=postgres;Port=5432;Database=inventorydb;"
     command:
       - dotnet
       - ef
@@ -61,7 +61,7 @@ services:
       target: migration
     environment:
        ASPNETCORE_ENVIRONMENT: Development
-       ConnectionStrings__IdentityDatabase: "Host=identity-postgres;Port=5432;Database=identitydb;Username=postgres;Password=postgres"
+       ConnectionStrings__IdentityDatabase: "Host=identity-postgres;Username=postgres;Password=postgres;Port=5432;Database=identitydb"
     command:
       - dotnet
       - ef
@@ -169,7 +169,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__IdentityDatabase: "User ID=postgres;Password=postgres;Host=identity-postgres;Port=5432;Database=identitydb;Pooling=true;"
+      ConnectionStrings__IdentityDatabase: "Host=identity-postgres;User ID=postgres;Password=postgres;Port=5432;Database=identitydb;Pooling=true;"
       IdentitySeed__DefaultPassword: "Password123!"
       Jwt__Issuer: "https://localhost:5101"
       Jwt__Audience: "smartops-api"
@@ -191,7 +191,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__InventoryDatabase: "User ID=postgres;Password=postgres;Host=inventory-postgres;Port=5432;Database=inventorydb;Pooling=true;"
+      ConnectionStrings__InventoryDatabase: "Host=inventory-postgres;User ID=postgres;Password=postgres;Port=5432;Database=inventorydb;Pooling=true;"
       Jwt__Issuer: "https://localhost:5101"
       Jwt__Audience: "smartops-api"
       Jwt__SigningKey: ${JWT_SIGNING_KEY}
@@ -212,7 +212,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DeviceDatabase: "User ID=postgres;Password=postgres;Host=device-postgres;Port=5432;Database=devicedb;Pooling=true;"
+      ConnectionStrings__DeviceDatabase: "Host=device-postgres;User ID=postgres;Password=postgres;Port=5432;Database=devicedb;Pooling=true;"
       Jwt__Issuer: "https://localhost:5101"
       Jwt__Audience: "smartops-api"
       Jwt__SigningKey:  ${JWT_SIGNING_KEY}
@@ -267,7 +267,7 @@ services:
       RabbitMQ__VirtualHost: "/"
       Redis__Connection: "redis:6379"
     ports:
-      - "5107:8080"
+      - "5104:8080"
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -280,6 +280,17 @@ services:
       retries: 3
     networks:
       - smartops-network 
+  
+  webui:
+    container_name: smartops-webui
+    build:
+      context: .
+      dockerfile: src/WebUI/SmartOpsAz.WebUI/smartopsaz.webui.client/Dockerfile
+    ports:
+      - "5173:80"
+    restart: unless-stopped
+    networks:
+      - smartops-network
 
   # Redis
   redis:

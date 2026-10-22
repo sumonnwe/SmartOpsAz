@@ -4,6 +4,7 @@ using DeviceService.Api;
 using DeviceService.Application.DTOs;
 using DeviceService.Domain.Enums;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.VisualStudio.TestPlatform.TestHost;
 using Xunit;
 
 namespace DeviceService.Tests.Api;
@@ -41,7 +42,7 @@ public class DevicesControllerIntegrationTests : IAsyncLifetime
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var content = await response.Content.ReadAsAsync<object>();
+        var content = await response.Content.ReadFromJsonAsync<object>();
         Assert.NotNull(content);
     }
 
@@ -78,7 +79,7 @@ public class DevicesControllerIntegrationTests : IAsyncLifetime
             FirmwareVersion: "1.0.0");
 
         var registerResponse = await _client.PostAsJsonAsync("/api/v1/devices", deviceRequest);
-        var deviceDto = await registerResponse.Content.ReadAsAsync<DeviceDto>();
+        var deviceDto = await registerResponse.Content.ReadFromJsonAsync<DeviceDto>();
         var deviceId = deviceDto!.Id;
 
         var hbRequest = new HeartbeatRequest(
@@ -108,7 +109,7 @@ public class DevicesControllerIntegrationTests : IAsyncLifetime
             FirmwareVersion: "1.0.0");
 
         var registerResponse = await _client.PostAsJsonAsync("/api/v1/devices", deviceRequest);
-        var deviceDto = await registerResponse.Content.ReadAsAsync<DeviceDto>();
+        var deviceDto = await registerResponse.Content.ReadFromJsonAsync<DeviceDto>();
         var deviceId = deviceDto!.Id;
 
         var hbRequest = new HeartbeatRequest(

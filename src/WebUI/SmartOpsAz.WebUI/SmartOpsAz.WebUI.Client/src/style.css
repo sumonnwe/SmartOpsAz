@@ -1,0 +1,1 @@
+body{margin:0;font-family:Inter,Roboto,Arial,sans-serif}.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:16px} .MuiTableCell-head{font-weight:700!important;background:#f3f6fb} @media(max-width:800px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

@@ -32,6 +32,44 @@ internal class InMemoryInventoryMovementRepository : IInventoryMovementRepositor
     }
 }
 
+internal class InMemoryInventoryRepository : IInventoryRepository
+{
+    private readonly Dictionary<Guid, InventoryItem> _items = new();
+
+    public Task AddAsync(InventoryItem item, CancellationToken cancellationToken)
+    {
+        _items[item.Id] = item;
+        return Task.CompletedTask;
+    }
+
+    public Task<InventoryItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        _items.TryGetValue(id, out var item);
+        return Task.FromResult(item);
+    }
+
+    public Task UpdateAsync(InventoryItem item, CancellationToken cancellationToken)
+    {
+        _items[item.Id] = item;
+        return Task.CompletedTask;
+    }
+
+    Task<bool> IInventoryRepository.ExistsByAssetTagAsync(string assetTag, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<bool> IInventoryRepository.ExistsBySerialNumberAsync(string serialNumber, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<(List<InventoryItem> Items, int TotalCount)> IInventoryRepository.SearchAsync(string? search, int? status, string? department, string? location, string? deviceType, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+}
+
 public class AssignDepartmentTests
 {
     [Fact]

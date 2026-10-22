@@ -104,4 +104,8 @@ docker compose up -d --force-recreate device-api
 
 //test stop service to check MassTransit is working to wait consumer microservies 
 docker compose stop dashboard-api
+///////////
 
+git add src/WebUI/
+git commit -m "feat: implement React WebUI foundation (Phase B)"
+git push

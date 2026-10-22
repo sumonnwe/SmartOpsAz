@@ -40,7 +40,7 @@ COPY . .
 WORKDIR /src/src/DeviceService/DeviceService.Api
 
 # Build API
-RUN dotnet build "DeviceService.Api.csproj" -c Release -o /app/build --no-restore
+RUN dotnet build "DeviceService.Api.csproj" -c Release -o /app/build --no-restore /p:EnableSourceControlManagerQueries=false /p:EnableSourceLink=false
 
 
 # ==========================================
@@ -66,7 +66,7 @@ RUN dotnet ef --version
 # ==========================================
 FROM build AS publish
 
-RUN dotnet publish "DeviceService.Api.csproj" -c Release -o /app/publish --no-restore /p:UseAppHost=false
+RUN dotnet publish "DeviceService.Api.csproj" -c Release -o /app/publish --no-restore /p:EnableSourceControlManagerQueries=false /p:EnableSourceLink=false
 
 
 # ==========================================

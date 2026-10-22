@@ -35,7 +35,7 @@ COPY ["src/DashboardService/DashboardService.Api/DashboardService.Api.csproj", "
 COPY ["src/Shared/SmartOpsAz.IntegrationEvents/SmartOpsAz.IntegrationEvents.csproj", "src/Shared/SmartOpsAz.IntegrationEvents/"]
 
 # Restore NuGet packages
-RUN dotnet restore "src/DashboardService/DashboardService.Api/DashboardService.Api.csproj"
+RUN dotnet restore "src/DashboardService/DashboardService.Api/DashboardService.Api.csproj" 
 
 # Copy remaining source files
 COPY . .
@@ -43,7 +43,7 @@ COPY . .
 WORKDIR /src/src/DashboardService/DashboardService.Api
 
 # Build API
-RUN dotnet build "DashboardService.Api.csproj" -c Release -o /app/build --no-restore
+RUN dotnet build "DashboardService.Api.csproj" -c Release -o /app/build --no-restore /p:EnableSourceControlManagerQueries=false /p:EnableSourceLink=false
 
 
 # ==========================================
@@ -69,7 +69,7 @@ RUN dotnet ef --version
 # ==========================================
 FROM build AS publish
 
-RUN dotnet publish "DashboardService.Api.csproj" -c Release -o /app/publish --no-restore /p:UseAppHost=false
+RUN dotnet publish "DashboardService.Api.csproj" -c Release -o /app/publish --no-restore /p:EnableSourceControlManagerQueries=false /p:EnableSourceLink=false
 
 
 # ==========================================
