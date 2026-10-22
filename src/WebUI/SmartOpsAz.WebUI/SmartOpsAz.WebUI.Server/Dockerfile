@@ -20,7 +20,7 @@ FROM with-node AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["SmartOpsAz.WebUI.Server/SmartOpsAz.WebUI.Server.csproj", "SmartOpsAz.WebUI.Server/"]
-COPY ["smartopsaz.webui.client/smartopsaz.webui.client.esproj", "smartopsaz.webui.client/"]
+COPY ["SmartOpsAz.WebUI.Client/SmartOpsAz.WebUI.Client.esproj", "SmartOpsAz.WebUI.Client/"]
 RUN dotnet restore "./SmartOpsAz.WebUI.Server/SmartOpsAz.WebUI.Server.csproj"
 COPY . .
 WORKDIR "/src/SmartOpsAz.WebUI.Server"
