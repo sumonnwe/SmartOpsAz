@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>de9d4091-75fb-402e-b55a-8318366c3889</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-    <SpaRoot>..\smartopsaz.webui.client</SpaRoot>
+    <SpaRoot>..\SmartOpsAz.WebUI.Client</SpaRoot>
     <SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
     <SpaProxyServerUrl>https://localhost:53558</SpaProxyServerUrl>
   </PropertyGroup>
@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\smartopsaz.webui.client\SmartOpsAz.WebUI.Client.esproj">
+    <ProjectReference Include="..\SmartOpsAz.WebUI.Client\SmartOpsAz.WebUI.Client.esproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
